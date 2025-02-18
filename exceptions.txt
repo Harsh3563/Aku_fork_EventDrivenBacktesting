@@ -1,0 +1,48 @@
+
+1. File: src/RandomTickManager.cpp
+   Line: 7
+   Issue: Random seed initialization using `srand(time(NULL))`.
+   Cause: If time(NULL) fails (rarely), it could return an invalid value.
+   Error Message: Undefined behavior for random seed initialization.
+   Exception Handling: Check the return value of time() and ensure it is valid. 
+                       Alternatively, seed the random generator with a default value if time(NULL) fails.
+
+2. File: src/RandomBuySellStrategy.cpp
+   Line: 23
+   Issue: Random number initialization using `srand((unsigned int)time(NULL))`.
+   Cause: Similar to the above, time(NULL) failure or repeated runs causing identical seeds.
+   Error Message: Random generator producing identical sequences.
+   Exception Handling: Add checks for time() failures and consider combining it with process ID for more randomness.
+
+3. File: src/YahooFinanceFileTickManager.cpp or src/RandomTickManager.cpp
+   Issue: If tick data fails to load from a CSV file (e.g., invalid path, file corruption, or missing data), the program may attempt to dereference a null or invalid pointer.
+   Cause: Failure to check whether the file stream is open or the tick data is successfully loaded.
+   Error Message: Segmentation fault or access violation when trying to access uninitialized memory.
+   Exception Handling: Ensure that:
+   	- The file is successfully loaded before accessing.
+   	- Each line or tick is validated for correctness before being used (is not null). For example -
+   		if (!fileStream.is_open()) {
+   			throw std::runtime_error("Error: Unable to open tick data file.");
+   		}
+   		if (tick == nullptr) {
+   			throw std::runtime_error("Error: Tick data is invalid or null.");
+   		}
+
+4. File: src/VirtualBank.cpp
+   Issue: Division by zero when calculating account balance, cash, or order size, as they often involve computations like balance / price or dynamic position sizing. (Not 	 	  explicitly coded yet, but these operations may be intended for future implementation. For instance, double orderSize = accountBalance / price; // Potential division    	  by zero if price == 0).
+   Cause: If inputs are invalid (e.g., zero as a divisor), the program may crash.
+   Error Message: Floating point exception: division by zero.
+   Exception Handling: Even though the current code lacks explicit division, it is best practice to include safeguards / input validation for such scenarios during 				       implementation (where numeric operations are performed) (say, using throw std::invalid_argument).
+
+5. File: src/YahooFinanceFileTickManager.cpp
+   Issue: File I/O errors when reading CSV tick data.
+   Cause: The specified file path does not exist or lacks read permissions.
+   Error Message: Failed to open file or file not found.
+   Exception Handling: Use try-catch blocks or ifstream.fail() checks to ensure file exists and can be read. Prompt user to provide a valid file path.
+
+
+
+
+
+
+
